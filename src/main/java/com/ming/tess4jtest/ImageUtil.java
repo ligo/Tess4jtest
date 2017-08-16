@@ -59,7 +59,7 @@ public class ImageUtil {
 	}
 	
 	/**
-	 * 该方法用于对图片进行预处理，进行灰度化、二值化、腐蚀、膨胀等，便于后续
+	 * 该方法用于对图片预处理，进行灰度化、二值化、腐蚀、膨胀等，便于后续识别文字区域
 	 * @param image 待进行预处理的图片
 	 * @return 返回处理好的图片
 	 */
@@ -69,6 +69,7 @@ public class ImageUtil {
 		Mat mat = BufferedImageToMat(image, BufferedImage.TYPE_3BYTE_BGR, CvType.CV_8UC1);
 		Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGB2GRAY);
 		Imgproc.threshold(mat, mat, 30, 255, Imgproc.THRESH_BINARY);
+		
 		
 		Mat element1 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size1);
 		Mat element2 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size2);
