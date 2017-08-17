@@ -11,20 +11,18 @@
  */
 package com.ming.tess4jtest;
 
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.nio.Buffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.Size;
-import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
-import com.lowagie.text.html.simpleparser.Img;
+
 
 /**
  * 
@@ -54,7 +52,20 @@ public class ImageUtil {
 		return outImage;
 	}
 	
-	private void findTextRegion(BufferedImage image) {
+	private void findTextRegion(Mat in) {
+		Mat cnt = null;
+		double area = 0;
+		List<MatOfPoint> contour = new ArrayList<MatOfPoint>();
+		Mat hierarchy = new Mat();
+		Imgproc.findContours(in, contour,hierarchy,Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+		for(int i = 0; i < contour.size(); i++) {
+			cnt = contour.get(i);
+			area = Imgproc.contourArea(cnt);
+			if (area < 1000) {
+				continue;
+			}
+			Imgproc.minAreaRect(cnt);
+		}
 		String region;
 	}
 	
@@ -63,10 +74,11 @@ public class ImageUtil {
 	 * @param image 待进行预处理的图片
 	 * @return 返回处理好的图片
 	 */
-	private BufferedImage preprocess(BufferedImage image) {
+	private Mat preprocess(BufferedImage image) {
+		// 定义腐蚀和膨胀的核函数
 		Size size1 = new Size(30,9);
 		Size size2 = new Size(24,6);
-		Mat mat = BufferedImageToMat(image, BufferedImage.TYPE_3BYTE_BGR, CvType.CV_8UC1);
+		Mat mat = BufferedImageToMat(image);
 		Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGB2GRAY);
 		Imgproc.threshold(mat, mat, 30, 255, Imgproc.THRESH_BINARY);
 		
@@ -76,43 +88,67 @@ public class ImageUtil {
 		Imgproc.dilate(mat, mat, element2);
 		Imgproc.erode(mat, mat, element1);
 		Imgproc.dilate(mat, mat, element2);
-		image = MatToBufferedImage(mat);
-		return image;
-	}
-	
-	/**
-	 * 将BufferedImage转换为Mat
-	 * @param bfImg 待转换的BufferedImage
-	 * @param imgType BufferedImage的类型
-	 * @param matType Mat的类型
-	 * @return 返回Mat
-	 */
-	private Mat BufferedImageToMat(BufferedImage bfImg, int imgType, int matType) {
-		BufferedImage original = bfImg;
-		int itype = imgType;
-		int mtype = matType;
-		
-		if (original == null) {
-			throw new IllegalArgumentException("original == null");
-		}
-		if (original.getType() != itype) {
-			BufferedImage image = new BufferedImage(original.getWidth(), original.getHeight(), itype);
-			Graphics2D g = image.createGraphics();
-			try {
-				g.setComposite(AlphaComposite.Src);
-				g.drawImage(original, 0, 0, null);
-			} finally {
-				g.dispose();
-			}
-		}
-		byte[] pixels = ((DataBufferByte) original.getRaster().getDataBuffer()).getData();
-		Mat mat = Mat.eye(original.getHeight(), original.getWidth(), mtype);
-		mat.put(0, 0, pixels);
 		return mat;
 	}
 	
-	private BufferedImage MatToBufferedImage(Mat mat) {
-		BufferedImage bufferedImage = null;
-		return bufferedImage;
+	/**
+	 * 该方法用于把BufferedImage转换为Mat
+	 * @param bfImg 输入参数为待转换的BufferedImage
+	 * @return 输出为转换后的Mat
+	 */
+	private Mat BufferedImageToMat(BufferedImage bfImg) {
+		 Mat out;
+         byte[] data;
+         int r, g, b;
+
+         if(bfImg.getType() == BufferedImage.TYPE_INT_RGB)
+         {
+             out = new Mat(bfImg.getHeight(), bfImg.getWidth(), CvType.CV_8UC3);
+             data = new byte[bfImg.getHeight() * bfImg.getWidth() * (int)out.elemSize()];
+             int[] dataBuff = bfImg.getRGB(0, 0, bfImg.getWidth(), bfImg.getHeight(), null, 0, bfImg.getWidth());
+             for(int i = 0; i < dataBuff.length; i++)
+             {
+                 data[i*3] = (byte) ((dataBuff[i] >> 16) & 0xFF);
+                 data[i*3 + 1] = (byte) ((dataBuff[i] >> 8) & 0xFF);
+                 data[i*3 + 2] = (byte) ((dataBuff[i] >> 0) & 0xFF);
+             }
+         }
+         else
+         {
+             out = new Mat(bfImg.getHeight(), bfImg.getWidth(), CvType.CV_8UC1);
+             data = new byte[bfImg.getHeight() * bfImg.getWidth() * (int)out.elemSize()];
+             int[] dataBuff = bfImg.getRGB(0, 0, bfImg.getWidth(), bfImg.getHeight(), null, 0, bfImg.getWidth());
+             for(int i = 0; i < dataBuff.length; i++)
+             {
+               r = (byte) ((dataBuff[i] >> 16) & 0xFF);
+               g = (byte) ((dataBuff[i] >> 8) & 0xFF);
+               b = (byte) ((dataBuff[i] >> 0) & 0xFF);
+               data[i] = (byte)((0.21 * r) + (0.71 * g) + (0.07 * b)); //luminosity
+             }
+          }
+          out.put(0, 0, data);
+          return out;
+	}
+	
+	/**
+	 * 把Mat转换为BufferedImage
+	 * @param in 输入参数为待转换的Mat
+	 * @return 输出为转换后的BufferedImage
+	 */
+	private BufferedImage MatToBufferedImage(Mat in) {
+		BufferedImage out;
+        byte[] data = new byte[in.height() * in.width() * (int)in.elemSize()];
+        int type;
+        in.get(0, 0, data);
+
+        if(in.channels() == 1)
+            type = BufferedImage.TYPE_BYTE_GRAY;
+        else
+            type = BufferedImage.TYPE_3BYTE_BGR;
+
+        out = new BufferedImage(in.width(), in.height(), type);
+
+        out.getRaster().setDataElements(0, 0, out.getWidth(), out.getHeight(), data);
+        return out;
 	}
 }
