@@ -15,10 +15,15 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.Box;
+
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
+import org.opencv.core.RotatedRect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
@@ -53,18 +58,21 @@ public class ImageUtil {
 	}
 	
 	private void findTextRegion(Mat in) {
-		Mat cnt = null;
+		MatOfPoint cnt = null;
 		double area = 0;
 		List<MatOfPoint> contour = new ArrayList<MatOfPoint>();
 		Mat hierarchy = new Mat();
-		Imgproc.findContours(in, contour,hierarchy,Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+		Imgproc.findContours(in, contour, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 		for(int i = 0; i < contour.size(); i++) {
 			cnt = contour.get(i);
+			MatOfPoint2f newcnt = new MatOfPoint2f(cnt.toArray());
 			area = Imgproc.contourArea(cnt);
 			if (area < 1000) {
 				continue;
 			}
-			Imgproc.minAreaRect(cnt);
+			RotatedRect rect = Imgproc.minAreaRect(newcnt);
+			Point[] vertices = new Point[4];
+			rect.points(vertices);
 		}
 		String region;
 	}
@@ -81,7 +89,6 @@ public class ImageUtil {
 		Mat mat = BufferedImageToMat(image);
 		Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGB2GRAY);
 		Imgproc.threshold(mat, mat, 30, 255, Imgproc.THRESH_BINARY);
-		
 		
 		Mat element1 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size1);
 		Mat element2 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size2);
