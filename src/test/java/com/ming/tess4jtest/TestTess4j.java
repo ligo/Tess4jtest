@@ -21,7 +21,7 @@ public class TestTess4j {
     public void test(){
     	File imageFile = new File("H:\\binary1.png");
     	Tesseract instance = new Tesseract();
-    	instance.setLanguage("chi_sim");
+    	instance.setLanguage("normal");
     	try {
 			String result = instance.doOCR(imageFile);
 			System.out.println(result);
