@@ -1,14 +1,3 @@
-/**
- * All rights Reserved, Designed By 云安宝
- * @Title ImageUtil.java
- * @Description 该类用于图像的二值化处理 
- * @author 深圳云安宝科技
- * @date 2017年8月9日 上午11:59:20
- * @version V3.0
- * @Copyright 2017 www.yunanbao.com.cn Inc. All rights reserved.
- *
- * 注意：本内容仅限于深圳云安宝科技有限公司内部传阅，禁止外泄以及用于其他商业目的 
- */
 package com.ming.tess4jtest;
 
 import java.awt.image.BufferedImage;
